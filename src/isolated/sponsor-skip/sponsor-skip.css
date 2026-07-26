@@ -1,0 +1,367 @@
+/* ── YTAF scrubber segment track ─────────────────────────────────
+   Sits on YouTube's progress bar. Designed as a luminous film strip
+   of category markers — not flat neon bricks. */
+
+:root {
+  --ytad-seg-sponsor: #ff6b4a;
+  --ytad-seg-sponsor-hi: #ffb089;
+  --ytad-seg-selfpromo: #e8b84a;
+  --ytad-seg-selfpromo-hi: #ffe08a;
+  --ytad-seg-exclusive_access: #3d9e6f;
+  --ytad-seg-exclusive_access-hi: #7ed9a8;
+  --ytad-seg-interaction: #d45cff;
+  --ytad-seg-interaction-hi: #f0a8ff;
+  --ytad-seg-intro: #2ec4b6;
+  --ytad-seg-intro-hi: #7ff0e4;
+  --ytad-seg-outro: #4c6fff;
+  --ytad-seg-outro-hi: #9eb0ff;
+  --ytad-seg-preview: #3aa0e8;
+  --ytad-seg-preview-hi: #8fd0ff;
+  --ytad-seg-hook: #5b7c99;
+  --ytad-seg-hook-hi: #a8c4d8;
+  --ytad-seg-filler: #c45c2a;
+  --ytad-seg-filler-hi: #f0a06a;
+  --ytad-seg-music_offtopic: #f0a202;
+  --ytad-seg-music_offtopic-hi: #ffd56a;
+  --ytad-seg-poi_highlight: #ff3d81;
+  --ytad-seg-poi_highlight-hi: #ff9ec0;
+  --ytad-seg-chapter: #d4b56a;
+  --ytad-seg-chapter-hi: #ffe6a8;
+}
+
+/* Soft under-rail when segments exist — gives the track presence */
+.ytp-progress-bar.ytad-has-previewbar::before,
+.YtPlayerProgressBarProgressBar.ytad-has-previewbar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.12) 20%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.12) 80%,
+    rgba(255, 255, 255, 0.04)
+  );
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0.85;
+}
+
+#ytad-previewbar {
+  overflow: visible;
+  padding: 0;
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  list-style: none;
+  z-index: 42;
+  transform: none;
+}
+
+.progress-bar-line > #ytad-previewbar {
+  height: 100%;
+}
+
+/* Segment chip */
+.ytad-seg {
+  position: absolute;
+  top: 50%;
+  left: var(--ytad-left);
+  width: var(--ytad-width);
+  height: 5px;
+  margin: 0;
+  padding: 0;
+  transform: translateY(-50%) scaleY(0.72);
+  transform-origin: center;
+  border-radius: 999px;
+  overflow: visible;
+  opacity: 0;
+  animation: ytad-seg-in 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--ytad-delay, 0ms);
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 160ms ease;
+  filter: drop-shadow(0 0 0 transparent);
+}
+
+@keyframes ytad-seg-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scaleY(0.2) scaleX(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(0.72);
+  }
+}
+
+/* Grow on scrubber hover / big mode */
+.ytp-progress-bar-container:hover .ytad-seg,
+.ytp-scrubber-container:hover ~ .ytp-progress-bar .ytad-seg,
+.ytp-progress-bar:hover .ytad-seg,
+.ytp-big-mode .ytad-seg {
+  height: 9px;
+  transform: translateY(-50%) scaleY(1);
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.45));
+}
+
+.ytad-seg.ytad-seg-active {
+  height: 10px;
+  transform: translateY(-50%) scaleY(1.05);
+  z-index: 3;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ytad-c) 55%, transparent));
+}
+
+.ytad-seg-fill {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ytad-c-hi) 92%, white) 0%,
+    var(--ytad-c) 48%,
+    color-mix(in srgb, var(--ytad-c) 75%, black) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 0 0 1px color-mix(in srgb, var(--ytad-c) 35%, transparent);
+}
+
+.ytad-seg-sheen {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ytad-seg-sheen::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: -60%;
+  width: 55%;
+  height: 180%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 45%,
+    transparent 70%
+  );
+  transform: skewX(-18deg);
+  animation: ytad-sheen 3.8s ease-in-out infinite;
+  animation-delay: var(--ytad-delay, 0ms);
+  opacity: 0.55;
+}
+
+@keyframes ytad-sheen {
+  0%,
+  55% {
+    left: -60%;
+    opacity: 0;
+  }
+  65% {
+    opacity: 0.65;
+  }
+  85%,
+  100% {
+    left: 120%;
+    opacity: 0;
+  }
+}
+
+/* Mute segments: diagonal hatch */
+.ytad-seg[data-action="mute"] .ytad-seg-fill {
+  background:
+    repeating-linear-gradient(
+      -42deg,
+      transparent,
+      transparent 3px,
+      rgba(0, 0, 0, 0.22) 3px,
+      rgba(0, 0, 0, 0.22) 5px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ytad-c-hi) 90%, white),
+      var(--ytad-c)
+    );
+}
+
+/* POI highlight: taller gem marker */
+.ytad-seg[data-action="poi"] {
+  width: max(var(--ytad-width), 0.55%);
+  height: 11px;
+  transform: translateY(-50%) scaleY(1);
+}
+
+.ytad-seg[data-action="poi"] .ytad-seg-fill {
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 10px color-mix(in srgb, var(--ytad-c) 50%, transparent);
+}
+
+/* Tiny category tip on hover (progress bar hover) */
+.ytad-seg-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(4px);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(12, 12, 14, 0.92);
+  color: #f4f1ea;
+  font: 600 10px/1.2 "YouTube Noto", Roboto, Arial, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  border: 1px solid color-mix(in srgb, var(--ytad-c) 40%, transparent);
+}
+
+.ytad-seg-tip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(12, 12, 14, 0.92);
+}
+
+.ytp-progress-bar-container:hover .ytad-seg:hover .ytad-seg-tip,
+.ytp-progress-bar:hover .ytad-seg:hover .ytad-seg-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Enable hover hit area when scrubber is open */
+.ytp-progress-bar-container:hover .ytad-seg,
+.ytp-progress-bar:hover .ytad-seg {
+  pointer-events: auto;
+  cursor: default;
+}
+
+/* Category color tokens */
+.ytad-seg[data-category="sponsor"] {
+  --ytad-c: var(--ytad-seg-sponsor);
+  --ytad-c-hi: var(--ytad-seg-sponsor-hi);
+}
+.ytad-seg[data-category="selfpromo"] {
+  --ytad-c: var(--ytad-seg-selfpromo);
+  --ytad-c-hi: var(--ytad-seg-selfpromo-hi);
+}
+.ytad-seg[data-category="exclusive_access"] {
+  --ytad-c: var(--ytad-seg-exclusive_access);
+  --ytad-c-hi: var(--ytad-seg-exclusive_access-hi);
+}
+.ytad-seg[data-category="interaction"] {
+  --ytad-c: var(--ytad-seg-interaction);
+  --ytad-c-hi: var(--ytad-seg-interaction-hi);
+}
+.ytad-seg[data-category="intro"] {
+  --ytad-c: var(--ytad-seg-intro);
+  --ytad-c-hi: var(--ytad-seg-intro-hi);
+}
+.ytad-seg[data-category="outro"] {
+  --ytad-c: var(--ytad-seg-outro);
+  --ytad-c-hi: var(--ytad-seg-outro-hi);
+}
+.ytad-seg[data-category="preview"] {
+  --ytad-c: var(--ytad-seg-preview);
+  --ytad-c-hi: var(--ytad-seg-preview-hi);
+}
+.ytad-seg[data-category="hook"] {
+  --ytad-c: var(--ytad-seg-hook);
+  --ytad-c-hi: var(--ytad-seg-hook-hi);
+}
+.ytad-seg[data-category="filler"] {
+  --ytad-c: var(--ytad-seg-filler);
+  --ytad-c-hi: var(--ytad-seg-filler-hi);
+}
+.ytad-seg[data-category="music_offtopic"] {
+  --ytad-c: var(--ytad-seg-music_offtopic);
+  --ytad-c-hi: var(--ytad-seg-music_offtopic-hi);
+}
+.ytad-seg[data-category="poi_highlight"] {
+  --ytad-c: var(--ytad-seg-poi_highlight);
+  --ytad-c-hi: var(--ytad-seg-poi_highlight-hi);
+}
+.ytad-seg[data-category="chapter"] {
+  --ytad-c: var(--ytad-seg-chapter);
+  --ytad-c-hi: var(--ytad-seg-chapter-hi);
+}
+
+/* Fallback if unknown category */
+.ytad-seg:not([data-category]) {
+  --ytad-c: var(--ytad-seg-sponsor);
+  --ytad-c-hi: var(--ytad-seg-sponsor-hi);
+}
+
+/* Prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ytad-seg {
+    animation: none;
+    opacity: 1;
+  }
+  .ytad-seg-sheen::after {
+    animation: none;
+    display: none;
+  }
+}
+
+/* ── Skip notice — matches track language ─────────────────────── */
+.ytad-sponsor-notice {
+  position: fixed;
+  left: 20px;
+  bottom: 80px;
+  z-index: 2147483646;
+  max-width: min(340px, calc(100vw - 40px));
+  padding: 11px 16px 11px 14px;
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(28, 26, 24, 0.94), rgba(16, 16, 18, 0.92));
+  color: #f4f1ea;
+  font: 600 13px/1.35 "YouTube Noto", Roboto, Arial, sans-serif;
+  letter-spacing: 0.02em;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 107, 74, 0.35);
+  border-left: 3px solid var(--ytad-seg-sponsor);
+  pointer-events: none;
+  animation: ytad-notice-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes ytad-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ytad-sponsor-notice[hidden] {
+  display: none !important;
+}

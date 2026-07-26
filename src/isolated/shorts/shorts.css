@@ -1,0 +1,8 @@
+/* Shorts hide — structural hosts from kevlar stamps */
+[data-ytad-hide-shorts="1"],
+ytd-reel-shelf-renderer[data-ytad-hide-shorts="1"],
+ytd-rich-shelf-renderer[data-ytad-hide-shorts="1"],
+ytm-shorts-lockup-view-model[data-ytad-hide-shorts="1"],
+ytm-shorts-lockup-view-model-v2[data-ytad-hide-shorts="1"] {
+  display: none !important;
+}

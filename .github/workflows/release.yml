@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rolling-release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build package
+        run: ./scripts/deploy.sh
+
+      - name: Publish rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ZIP="releases/YTAF.zip"
+          test -f "$ZIP"
+
+          # Replace the single rolling release + tag in place
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+
+          gh release create latest \
+            --title "YTAF" \
+            --notes "Download YTAF.zip and load it as an unpacked extension (or extract and Load unpacked)." \
+            --latest \
+            "$ZIP"

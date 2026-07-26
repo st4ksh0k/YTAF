@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>YTAF</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>YTAF</h1>
+      <p>Ad-free watch · queue · hide Shorts · skip sponsors</p>
+    </header>
+    <div class="row">
+      <label for="enabled">Enabled</label>
+      <label class="switch">
+        <input id="enabled" type="checkbox" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="row">
+      <label for="queueEnabled">Play queue</label>
+      <label class="switch">
+        <input id="queueEnabled" type="checkbox" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="row">
+      <label for="hideShorts">Hide Shorts</label>
+      <label class="switch">
+        <input id="hideShorts" type="checkbox" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="row">
+      <label for="redirectShorts">Shorts → watch</label>
+      <label class="switch">
+        <input id="redirectShorts" type="checkbox" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="row">
+      <label for="skipSponsors">Skip in-video sponsors</label>
+      <label class="switch">
+        <input id="skipSponsors" type="checkbox" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>Sanitized responses</span><strong id="sanitizedResponses">0</strong></div>
+      <div class="stat"><span>Stubbed ad breaks</span><strong id="stubbedAdBreaks">0</strong></div>
+      <div class="stat"><span>UI skips</span><strong id="skippedUiAds">0</strong></div>
+      <div class="stat"><span>Filled feed slots</span><strong id="filledFeedSlots">0</strong></div>
+      <div class="stat"><span>Sponsors skipped</span><strong id="skippedSponsors">0</strong></div>
+      <div class="stat"><span>Shorts hidden</span><strong id="hiddenShorts">0</strong></div>
+      <div class="stat"><span>Queued videos</span><strong id="queuedVideos">0</strong></div>
+      <div class="stat"><span>Queue length</span><strong id="queueLength">0</strong></div>
+    </div>
+    <div class="hint">
+      Reload the YouTube tab after toggling. Queue: hover a tile → Next/Add, or Shift+Q on watch.
+      Soft ad structure preserved to reduce anti-adblock trips.
+    </div>
+    <script src="../shared/ns.js"></script>
+    <script src="../shared/constants.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

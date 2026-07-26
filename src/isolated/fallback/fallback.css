@@ -1,0 +1,15 @@
+/* Hide anti-adblock / premium upsell surfaces when present */
+ytd-enforcement-message-view-model,
+ytd-enforcement-message-view-model[dialog],
+tp-yt-paper-dialog:has(ytd-enforcement-message-view-model) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Masthead / mealbar promos — feed ads are replaced by feed-fill */
+ytd-mealbar-promo-renderer[dialog-type="mealbar"],
+#masthead-ad,
+ytd-banner-promo-renderer {
+  display: none !important;
+}
