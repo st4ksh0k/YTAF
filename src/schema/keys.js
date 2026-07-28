@@ -1,6 +1,14 @@
 /**
  * RE-derived Innertube / placement keys.
- * Anchors: player base.js B_C(); kevlar rich-item + ad-slot stamper maps.
+ *
+ * Player anchors (b81a9a58 player_es6 base.js) + Adblock-for-YouTube port:
+ * - Hard-wipe adPlacements / adSlots / playerAds (undefined), keep SABR URL.
+ * - onAbnormalityDetected is nooped in sanitizeDefend (T1 safe without
+ *   forecasting START shells).
+ * - Request ladder: params eAFgAQ / 8AUB, clientScreen CHANNEL|ADUNIT, pyv.
+ * - isInlinePlaybackNoAd / google_ad_status / DCLKSTAT still applied.
+ *
+ * Kevlar: rich-item + ad-slot stamper maps (feed keys below).
  */
 (() => {
   const YTAD = globalThis.YTAD;
@@ -9,7 +17,10 @@
   YTAD.define("keys", {
     FORECASTING_RENDERER: "clientForecastingAdRenderer",
 
-    /** Playable creatives branched in B_C(N.renderer) — strip these */
+    /**
+     * Playable creatives — GRh() + overlays/companions/surveys.
+     * START placements must not remain as forecasting-only after strip (mAs).
+     */
     PLAYABLE_PLACEMENT_RENDERERS: Object.freeze([
       "instreamVideoAdRenderer",
       "linearAdSequenceRenderer",
@@ -112,6 +123,7 @@
     AD_BREAK_PATHS: Object.freeze([
       "/youtubei/v1/player/ad_break",
       "/get_midroll_info",
+      "/get_midroll_",
     ]),
 
     AD_CLICK_HOSTS: Object.freeze([

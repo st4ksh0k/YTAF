@@ -119,15 +119,20 @@ This is cheap and early, but **incomplete**: YouTube also embeds ad metadata ins
 
 ### The educational idea
 
-Naïve blockers delete `adPlacements` entirely. Some YouTube anti-adblock paths (`ab_det_*` and friends) check whether placement **structure** still looks intact. YTAF keeps the shell and removes the **playable creatives**.
+Modern YouTube pairs ad JSON with SABR T1 enforcement (`onAbnormalityDetected`). YTAF hard-wipes playable ad fields, noops that abnormality path, and spoofs player request context so content still plays.
 
 ### Player responses (`main/sanitize/player.js`)
 
 1. Detect player-like objects (`adPlacements` / `adSlots` / `playerAds`, or `videoDetails` + `streamingData`).
-2. For each `adPlacementRenderer`, **delete** playable renderer keys derived from the player’s own `B_C(N.renderer)` branching — e.g. `instreamVideoAdRenderer`, `linearAdSequenceRenderer`, surveys, overlays, companions, shopping, tracking slots, …
-3. Leave a harmless stub (e.g. `clientForecastingAdRenderer`) so the placement object stays non-empty.
-4. Clear `adSlots` / `playerAds` arrays.
-5. **Do not** delete the `adPlacements` array itself.
+2. **Hard-wipe** `adPlacements` / `adSlots` / `playerAds` / `adBreakHeartbeatParams` (delete / undefined).
+3. Scrub `muteOnStart` and `youThereRenderer` nudges; keep WEB `serverAbrStreamingUrl` (SABR-only responses blank if deleted).
+4. Warm navigations still set `isInlinePlaybackNoAd` on `/player` requests.
+
+### Defense / requests (`main/sanitize/defend.js`, `request.js`)
+
+- Noop Promise callbacks that contain `onAbnormalityDetected`.
+- Spoof outbound `clientScreen` `WATCH` → `ADUNIT`; escalate through params `eAFgAQ` / `8AUB`, `CHANNEL`, `pyv`, and `AD_TYPE_INSTREAM` if playability fails, then `loadVideoById`.
+- Force `web_streaming_watch` off; SSAP midroll seek; stub `google_ad_status = 1`.
 
 ### Feed JSON (`main/sanitize/feed.js`)
 
@@ -137,9 +142,11 @@ Walk list fields (`contents`, `items`, `results`, `continuationItems`, `mutation
 
 | Hook | Role |
 |---|---|
-| `window.fetch` / `XMLHttpRequest` | Sanitize Innertube JSON; stub midroll endpoints |
+| `window.fetch` / `XMLHttpRequest` | Sanitize Innertube JSON; stub midroll endpoints; rewrite player request bodies |
 | `Response.prototype.json` | Catch `response.json()` consumers |
-| `JSON.parse` | Catch stringified / inline player JSON |
+| `JSON.parse` / `JSON.stringify` | Neuter player JSON; inject no-ad flag + clientScreen spoof |
+| `Object.assign` / `TextEncoder` / `Request` | Fallback paths when stringify is locked or bodies are encoded |
+| `Promise.prototype.then` | Abnormality noop + jspb / mute scrub |
 | `ytInitialPlayerResponse` / `ytInitialData` accessors | Trap SSR bootstrap globals |
 | Short poll | Late assignments after navigation |
 

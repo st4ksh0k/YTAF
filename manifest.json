@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YTAF",
-  "version": "1.2.7",
+  "version": "1.3.8",
   "description": "YTAF — ad-free YouTube, play queue, hide Shorts, and skip sponsored segments.",
   "permissions": [
     "declarativeNetRequest",

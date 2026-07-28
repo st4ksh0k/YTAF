@@ -41,7 +41,7 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||youtube.com/pagead/",
-      "resourceTypes": ["image", "xmlhttprequest", "ping", "script"]
+      "resourceTypes": ["image", "xmlhttprequest", "ping", "script", "media", "sub_frame"]
     }
   },
   {
@@ -60,6 +60,42 @@
     "condition": {
       "urlFilter": "||youtube.com/pcs/activeview",
       "resourceTypes": ["image", "xmlhttprequest", "ping"]
+    }
+  },
+  {
+    "id": 8,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||youtube.com/youtubei/v1/player/ad_break",
+      "resourceTypes": ["xmlhttprequest", "ping", "other"]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||youtube.com/get_midroll_",
+      "resourceTypes": ["xmlhttprequest", "ping", "other"]
+    }
+  },
+  {
+    "id": 10,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||youtube.com/get_video_info?*adunit",
+      "resourceTypes": ["xmlhttprequest", "other"]
+    }
+  },
+  {
+    "id": 11,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||googlevideo.com/initplayback?source=youtube&*&c=TVHTML5&oad=",
+      "resourceTypes": ["xmlhttprequest", "other"]
     }
   }
 ]

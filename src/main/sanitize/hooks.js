@@ -4,6 +4,9 @@
     !YTAD?.sanitizePlayer ||
     !YTAD?.sanitizeFeed ||
     !YTAD?.sanitizeShorts ||
+    !YTAD?.sanitizeRequest ||
+    !YTAD?.sanitizeReload ||
+    !YTAD?.sanitizeDefend ||
     !YTAD?.urls ||
     !YTAD?.messaging ||
     !YTAD?.constants
@@ -14,6 +17,19 @@
   const { looksLikePlayerResponse, neuterPlayerResponse } = YTAD.sanitizePlayer;
   const { stripFeedAds } = YTAD.sanitizeFeed;
   const { stripShorts } = YTAD.sanitizeShorts;
+  const {
+    scheduleSabrColdReload,
+    ensurePlayerPrefetch,
+    installCreateGate,
+    mergeVrIntoPlayerResponse,
+  } = YTAD.sanitizeReload;
+  const {
+    rewriteJsonBodyText,
+    looksLikePlayerRequestBody,
+    installRequestHooks,
+    observeParsedResponse,
+  } = YTAD.sanitizeRequest;
+  const { installDefend } = YTAD.sanitizeDefend;
   const { isAdBreakUrl, shouldSanitizeInnertubeUrl } = YTAD.urls;
   const { bumpStat, onPageMessage } = YTAD.messaging;
   const { PAGE, EMPTY_AD_BREAK } = YTAD.constants;
@@ -43,6 +59,7 @@
         stripPlayerAds: cfg.stripPlayerAds,
         onChanged: () => bumpStat("sanitizedResponses"),
       });
+      if (cfg.stripPlayerAds) scheduleSabrColdReload(value);
     }
 
     if (value.playerResponse && looksLikePlayerResponse(value.playerResponse)) {
@@ -50,11 +67,36 @@
         stripPlayerAds: cfg.stripPlayerAds,
         onChanged: () => bumpStat("sanitizedResponses"),
       });
+      if (cfg.stripPlayerAds) scheduleSabrColdReload(value.playerResponse);
+    }
+
+    if (cfg.stripPlayerAds) {
+      try {
+        observeParsedResponse(value);
+        if (value.playerResponse) observeParsedResponse(value.playerResponse);
+      } catch {
+        /* ignore */
+      }
     }
 
     if (stripFeedAds(value, 0) > 0) bumpStat("sanitizedResponses");
     if (cfg.hideShorts !== false && stripShorts(value, 0) > 0) bumpStat("hiddenShorts");
     return value;
+  }
+
+  async function sanitizePlayerPayload(data, cfg) {
+    sanitizeDeep(data, cfg);
+    if (!cfg.stripPlayerAds) return data;
+    try {
+      if (looksLikePlayerResponse(data)) {
+        await mergeVrIntoPlayerResponse(data);
+      } else if (data?.playerResponse && looksLikePlayerResponse(data.playerResponse)) {
+        await mergeVrIntoPlayerResponse(data.playerResponse);
+      }
+    } catch {
+      /* ignore */
+    }
+    return data;
   }
 
   function emptyJsonResponse() {
@@ -78,7 +120,9 @@
       const value = await nativeResponseJson.call(this);
       if (!cfg.enabled) return value;
       try {
-        if (looksLikePlayerOrWatchPayload(value)) return sanitizeDeep(value, cfg);
+        if (looksLikePlayerOrWatchPayload(value)) {
+          return await sanitizePlayerPayload(value, cfg);
+        }
       } catch {
         /* ignore */
       }
@@ -88,6 +132,16 @@
     window.fetch = async function patchedFetch(input, init) {
       if (cfg.enabled && cfg.stubAdBreak && isAdBreakUrl(input)) {
         return emptyJsonResponse();
+      }
+
+      if (
+        cfg.enabled &&
+        cfg.stripPlayerAds &&
+        init &&
+        typeof init.body === "string" &&
+        looksLikePlayerRequestBody(init.body)
+      ) {
+        init = { ...init, body: rewriteJsonBodyText(init.body) };
       }
 
       const response = await nativeFetch.call(this, input, init);
@@ -100,7 +154,7 @@
         }
         const data = await response.clone().json();
         if (looksLikePlayerOrWatchPayload(data)) {
-          sanitizeDeep(data, cfg);
+          await sanitizePlayerPayload(data, cfg);
           return new Response(JSON.stringify(data), {
             status: response.status,
             statusText: response.statusText,
@@ -141,6 +195,17 @@
         }, 0);
         return;
       }
+      if (cfg.enabled && cfg.stripPlayerAds && typeof body === "string" && looksLikePlayerRequestBody(body)) {
+        body = rewriteJsonBodyText(body);
+      } else if (
+        cfg.enabled &&
+        cfg.stripPlayerAds &&
+        Array.isArray(body) &&
+        typeof body[0] === "string" &&
+        looksLikePlayerRequestBody(body[0])
+      ) {
+        body = [rewriteJsonBodyText(body[0]), ...body.slice(1)];
+      }
       return nativeSend.call(this, body);
     };
 
@@ -148,7 +213,20 @@
       const value = nativeParse.call(this, text, reviver);
       if (!cfg.enabled) return value;
       try {
+        // Unlock playback-rate clamps used by anti-adblock paths.
+        if (
+          typeof text === "string" &&
+          text.includes('"minimumPlaybackRate":100,"maximumPlaybackRate":100')
+        ) {
+          /* object already parsed — fix on value below */
+        }
+        if (value?.playerConfig?.granularVariableSpeedConfig) {
+          const g = value.playerConfig.granularVariableSpeedConfig;
+          if (g.minimumPlaybackRate === 100) g.minimumPlaybackRate = 25;
+          if (g.maximumPlaybackRate === 100) g.maximumPlaybackRate = 200;
+        }
         if (looksLikePlayerOrWatchPayload(value)) return sanitizeDeep(value, cfg);
+        if (cfg.stripPlayerAds) observeParsedResponse(value);
       } catch (err) {
         console.warn("[ytad] sanitize JSON.parse failed", err);
       }
@@ -203,24 +281,37 @@
 
     try {
       let stored = window.ytInitialPlayerResponse;
+      if (cfg.enabled && stored) {
+        try {
+          neuterPlayerResponse(stored, {
+            stripPlayerAds: cfg.stripPlayerAds,
+            onChanged: () => bumpStat("sanitizedResponses"),
+          });
+          if (cfg.stripPlayerAds) scheduleSabrColdReload(stored);
+        } catch (err) {
+          console.warn("[ytad] initial player neuter failed", err);
+        }
+      }
       Object.defineProperty(window, "ytInitialPlayerResponse", {
         configurable: true,
         enumerable: true,
         get: () => stored,
         set(value) {
-          if (!cfg.enabled) {
-            stored = value;
-            return;
+          stored = value;
+          if (!cfg.enabled || !value) return;
+          try {
+            neuterPlayerResponse(stored, {
+              stripPlayerAds: cfg.stripPlayerAds,
+              onChanged: () => bumpStat("sanitizedResponses"),
+            });
+            if (cfg.stripPlayerAds) scheduleSabrColdReload(stored);
+          } catch (err) {
+            console.warn("[ytad] ytInitialPlayerResponse neuter failed", err);
           }
-          const { response } = neuterPlayerResponse(value, {
-            stripPlayerAds: cfg.stripPlayerAds,
-            onChanged: () => bumpStat("sanitizedResponses"),
-          });
-          stored = response;
         },
       });
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.warn("[ytad] ytInitialPlayerResponse trap failed", err);
     }
 
     try {
@@ -241,21 +332,55 @@
       /* ignore */
     }
 
+    // Mirror set-constant playerResponse.adPlacements → undefined on movie_player.
+    try {
+      const desc = Object.getOwnPropertyDescriptor(window, "playerResponse");
+      if (!desc || desc.configurable) {
+        let pr = window.playerResponse;
+        Object.defineProperty(window, "playerResponse", {
+          configurable: true,
+          enumerable: true,
+          get: () => pr,
+          set(value) {
+            pr = value;
+            if (cfg.enabled && cfg.stripPlayerAds && value) {
+              try {
+                neuterPlayerResponse(value, { stripPlayerAds: true });
+              } catch {
+                /* ignore */
+              }
+            }
+          },
+        });
+        if (pr && cfg.stripPlayerAds) neuterPlayerResponse(pr, { stripPlayerAds: true });
+      }
+    } catch {
+      /* ignore */
+    }
+
     return { sanitizeGlobals, sanitizeInitialData };
   }
 
   function install() {
     const cfg = createConfig();
-    // Capture true natives once so re-inject after extension reload doesn't nest patches.
-    const natives = (globalThis.__YTAD_NATIVES__ ||= {
-      parse: JSON.parse,
-      fetch: window.fetch.bind(window),
-      responseJson: Response.prototype.json,
-      xhrOpen: XMLHttpRequest.prototype.open,
-      xhrSend: XMLHttpRequest.prototype.send,
-    });
+    const natives = (globalThis.__YTAD_NATIVES__ ||= {});
+    natives.parse ||= JSON.parse;
+    natives.stringify ||= JSON.stringify;
+    natives.assign ||= Object.assign;
+    natives.fetch ||= window.fetch.bind(window);
+    natives.responseJson ||= Response.prototype.json;
+    natives.xhrOpen ||= XMLHttpRequest.prototype.open;
+    natives.xhrSend ||= XMLHttpRequest.prototype.send;
+    natives.promiseThen ||= Promise.prototype.then;
+    natives.appendChild ||= Node.prototype.appendChild;
+    natives.textEncode ||= TextEncoder.prototype.encode;
+    natives.Request ||= window.Request;
 
+    // Defense first — abnormality noop must win before player boots.
+    installDefend(cfg, natives);
+    installRequestHooks(cfg, natives);
     installNetworkHooks(cfg, natives);
+    installCreateGate();
     const { sanitizeGlobals, sanitizeInitialData } = installGlobalTraps(cfg, natives.parse);
 
     sanitizeGlobals();
@@ -265,9 +390,26 @@
     const timer = setInterval(() => {
       sanitizeGlobals();
       sanitizeInitialData();
+      try {
+        installCreateGate();
+        const boot =
+          window.ytplayer?.bootstrapPlayerResponse || window.ytInitialPlayerResponse;
+        if (boot && typeof boot === "object") {
+          neuterPlayerResponse(boot, {
+            stripPlayerAds: cfg.stripPlayerAds,
+            onChanged: () => bumpStat("sanitizedResponses"),
+          });
+          if (cfg.stripPlayerAds) {
+            ensurePlayerPrefetch(boot);
+            scheduleSabrColdReload(boot);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
       passes += 1;
-      if (passes > 40) clearInterval(timer);
-    }, 250);
+      if (passes > 400) clearInterval(timer);
+    }, 50);
 
     try {
       onPageMessage((data) => {
@@ -275,7 +417,7 @@
       });
       YTAD.messaging.postToPage(PAGE.READY);
     } catch {
-      /* page messaging optional — hooks already active */
+      /* page messaging optional */
     }
   }
 

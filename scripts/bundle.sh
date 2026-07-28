@@ -41,6 +41,9 @@ bundle "$DIST/main.js" \
   "$SRC/main/sanitize/player.js" \
   "$SRC/main/sanitize/feed.js" \
   "$SRC/main/sanitize/shorts.js" \
+  "$SRC/main/sanitize/request.js" \
+  "$SRC/main/sanitize/reload.js" \
+  "$SRC/main/sanitize/defend.js" \
   "$SRC/main/sanitize/hooks.js" \
   "$SRC/main/sanitize/bootstrap.js" \
   "$SRC/main/feed-fill/similarity.js" \

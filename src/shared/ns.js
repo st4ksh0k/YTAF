@@ -6,7 +6,7 @@
  * Bundle execution always starts here and rebuilds YTAD from scratch.
  */
 (() => {
-  const BUILD = 12;
+  const BUILD = 23;
 
   // Always rebuild the namespace when this file runs (bundle is atomic).
   // Clear install flags so a post-reload re-inject can hook again.

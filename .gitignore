@@ -2,3 +2,7 @@
 /_metadata
 /releases
 .DS_Store
+
+# Local reference
+/*.zip
+/fe76ba69-*.zip
